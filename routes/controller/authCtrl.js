@@ -1,24 +1,16 @@
 
-const userDB = {
-    users: require('../../data/users.json'),
-    setUsers: function(data) { this.users = data },
-}
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const fsPromises = require('fs').promises;
-const path = require('path');
-require('dotenv').config();
+const User = require('../../model/User');
 
 const handleLogin = async (req, res) => {
     const {user, pwd} = req.body ;
     if (!(user && pwd)) {
         return res.status(400).json({'message': 'uname and pwd are required'});
     }
+    const foundUser = await User.findOne({ username: user }).exec();
 
-    const foundUser = userDB.users.find(p => p.username === user);
     if (!foundUser) return res.sendStatus(401);
-
     // eval password
     const match = await bcrypt.compare(pwd, foundUser.password);
     if (match) {
@@ -39,18 +31,15 @@ const handleLogin = async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET,
             {expiresIn: '1d'}
         );
+        
         // update current user with refresh token
-        const otherUsers = userDB.users.filter(u => u.username != foundUser.username);
-        const currentUser =  {...foundUser, refreshToken};
-        userDB.setUsers([...otherUsers, currentUser]);
-        // write new user with refresh token to db
-        await fsPromises.writeFile(
-            path.join(__dirname, '..', '..', 'data', 'users.json'),
-            JSON.stringify(userDB.users)
-        );
+        foundUser.refreshToken = refreshToken;
+        const result = await foundUser.save();
+        console.log(result);
+        
         // send accessToken as a http cookie witch is not visible to js
         res.cookie('jwt', refreshToken, 
-            {httpOnly: true, maxAge: 1000*60*60*24, sameSite: 'None', secure: true});
+            {httpOnly: true, maxAge: 1000*60*60*24, sameSite: 'None'}); //secure: true
         res.json({accessToken});
 
     }else {

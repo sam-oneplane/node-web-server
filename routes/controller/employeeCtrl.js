@@ -1,28 +1,15 @@
-const fsPromises = require('fs').promises;
-const path = require('path');
+const Employee = require('../../model/Employee');
 
-const data = {
-    employees: require('../../data/employees.json'),
-    setEmployees: function(dat) {this.employees = dat},
-}
-
-const updateDB =  () => {
-    fsPromises.writeFile(
-        path.join(__dirname, '..', '..', 'data', 'employees.json'),
-        JSON.stringify(data.employees)
-    )
-} 
-
-const getEmployees = (req, res) => {
-    res.json(data.employees);
+const getEmployees = async (req, res) => {
+    const employees = await Employee.find();
+    if(!employees) return res.status(204).json({"massage": "no employee found"});
+    res.json(employees); 
 }
 
 const postEmployee = async (req, res) => {
     const idx = data.employees.length - 1  ;
     const newEmployee = {
-        id: data.employees[idx].id + 1 || 1,
-        firstname: req.body.firstname,
-        lastname: req.body.lastname,
+        
     }
     console.log(data.employees[idx].id + 1);
     if (!newEmployee.firstname || !newEmployee.lastname) {
