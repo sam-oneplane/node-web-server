@@ -1,5 +1,4 @@
 
-const { nextDay } = require('date-fns');
 const jwt = require('jsonwebtoken');
 
 const verifyJWT = (req, res, next) => {
